@@ -45,7 +45,7 @@ app.use('/api/ai',           require('./routes/ai'));
 app.use('/api/map',          require('./routes/map'));
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Crime Management Server running on port ${PORT}`);
   pool.query('SELECT 1')
     .then(() => console.log('MySQL connection OK'))
@@ -53,4 +53,17 @@ app.listen(PORT, () => {
       console.error('MySQL connection failed:', err.code || err.message);
       console.error('Check backend/.env DB_HOST, DB_USER, DB_PASSWORD, and DB_NAME.');
     });
+});
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`Port ${PORT} is already in use.`);
+    console.error('Close the existing backend terminal, or stop the Node process using that port, then run npm start again.');
+    console.error(`On Windows, find it with: netstat -ano | findstr :${PORT}`);
+    console.error('Then stop it with: taskkill /PID <PID> /F');
+    process.exit(1);
+  }
+
+  console.error('Server failed to start:', err.message);
+  process.exit(1);
 });
