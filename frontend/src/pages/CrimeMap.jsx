@@ -27,17 +27,25 @@ function HeatLayer({ points }) {
 
   useEffect(() => {
     if (!points.length || !map) return
+    if (typeof L.heatLayer !== 'function') {
+      console.warn('leaflet.heat plugin not available — heatmap overlay disabled')
+      return
+    }
     if (layerRef.current) {
       try { map.removeLayer(layerRef.current) } catch {}
     }
-    const heatPoints = points.map(p => [parseFloat(p.latitude), parseFloat(p.longitude), 1])
-    layerRef.current = L.heatLayer(heatPoints, {
-      radius: 45,
-      blur: 25,
-      maxZoom: 10,
-      gradient: { 0.2: '#3b82f6', 0.5: '#f59e0b', 0.8: '#ef4444', 1.0: '#7c3aed' },
-    })
-    layerRef.current.addTo(map)
+    try {
+      const heatPoints = points.map(p => [parseFloat(p.latitude), parseFloat(p.longitude), 1])
+      layerRef.current = L.heatLayer(heatPoints, {
+        radius: 45,
+        blur: 25,
+        maxZoom: 10,
+        gradient: { 0.2: '#3b82f6', 0.5: '#f59e0b', 0.8: '#ef4444', 1.0: '#7c3aed' },
+      })
+      layerRef.current.addTo(map)
+    } catch (e) {
+      console.error('HeatLayer render error:', e)
+    }
     return () => {
       if (layerRef.current) {
         try { map.removeLayer(layerRef.current) } catch {}
