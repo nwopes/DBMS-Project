@@ -17,6 +17,7 @@ const emptyForm = { crime_type: '', date: '', time: '', location_id: '', descrip
 export default function Crimes() {
   const [crimes, setCrimes] = useState([])
   const [locations, setLocations] = useState([])
+  const [loadError, setLoadError] = useState('')
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
   const [showModal, setShowModal] = useState(false)
@@ -27,9 +28,28 @@ export default function Crimes() {
   const navigate = useNavigate()
 
   const load = async () => {
-    const [c, l] = await Promise.all([axios.get('/api/crimes'), axios.get('/api/locations')])
-    setCrimes(c.data)
-    setLocations(l.data)
+    setLoading(true)
+    setLoadError('')
+
+    const [crimeResult, locationResult] = await Promise.allSettled([
+      axios.get('/api/crimes'),
+      axios.get('/api/locations')
+    ])
+
+    if (crimeResult.status === 'fulfilled') {
+      setCrimes(crimeResult.value.data)
+    } else {
+      setLoadError('Failed to load crimes')
+      setCrimes([])
+    }
+
+    if (locationResult.status === 'fulfilled') {
+      setLocations(locationResult.value.data)
+    } else {
+      setLoadError(prev => prev ? `${prev}; failed to load locations` : 'Failed to load locations')
+      setLocations([])
+    }
+
     setLoading(false)
   }
 
@@ -93,6 +113,13 @@ export default function Crimes() {
           </button>
         }
       />
+
+      {loadError && (
+        <div className="mb-5 rounded-lg border px-4 py-3 text-sm"
+          style={{ background: 'rgba(239,68,68,0.08)', borderColor: 'rgba(239,68,68,0.25)', color: '#fca5a5' }}>
+          {loadError}. Check that the backend is running and connected to MySQL.
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex gap-3 mb-5">
@@ -177,10 +204,13 @@ export default function Crimes() {
             </div>
             <div className="col-span-2">
               <label className="block text-xs text-slate-400 mb-1.5">Location</label>
-              <select className="form-input" value={form.location_id} onChange={e => setForm({...form, location_id: e.target.value})}>
-                <option value="">Select location</option>
+              <select className="form-input" value={form.location_id} onChange={e => setForm({...form, location_id: e.target.value})} disabled={locations.length === 0}>
+                <option value="">{locations.length === 0 ? 'No locations available' : 'Select location'}</option>
                 {locations.map(l => <option key={l.location_id} value={l.location_id}>{l.address}, {l.city}</option>)}
               </select>
+              {locations.length === 0 && !loadError && (
+                <p className="text-xs text-slate-500 mt-1">No locations loaded yet. Start the backend and verify MySQL access.</p>
+              )}
             </div>
             <div className="col-span-2">
               <label className="block text-xs text-slate-400 mb-1.5">Description</label>
