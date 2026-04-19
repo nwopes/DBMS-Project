@@ -4,7 +4,9 @@ import toast from 'react-hot-toast'
 import { FileText, Plus, Search, Pencil, Trash2 } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import Modal from '../components/Modal'
+import Pagination from '../components/Pagination'
 
+const ITEMS_PER_PAGE = 10
 const emptyForm = { crime_id: '', filed_by: '', filing_date: '', description: '' }
 
 export default function FIRs() {
@@ -16,6 +18,7 @@ export default function FIRs() {
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState(emptyForm)
   const [viewFir, setViewFir] = useState(null)
+  const [page, setPage] = useState(1)
 
   const load = async () => {
     const [f, c, p] = await Promise.all([axios.get('/api/firs'), axios.get('/api/crimes'), axios.get('/api/persons')])
@@ -28,6 +31,8 @@ export default function FIRs() {
     f.filed_by_name?.toLowerCase().includes(search.toLowerCase()) ||
     String(f.fir_id).includes(search)
   )
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE)
+  const paginated  = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
 
   const openCreate = () => { setEditing(null); setForm(emptyForm); setShowModal(true) }
   const openEdit = (f) => {
@@ -76,7 +81,7 @@ export default function FIRs() {
             </tr>
           </thead>
           <tbody>
-            {filtered.map(f => (
+            {paginated.map(f => (
               <tr key={f.fir_id} className="table-row cursor-pointer" onClick={() => setViewFir(f)}>
                 <td className="px-4 py-3 text-xs text-slate-500 font-mono">#{f.fir_id}</td>
                 <td className="px-4 py-3 font-medium text-slate-200 text-sm">{f.crime_type}</td>
@@ -94,6 +99,14 @@ export default function FIRs() {
           </tbody>
         </table>
       </div>
+
+      <Pagination
+        currentPage={page}
+        totalPages={totalPages}
+        onPageChange={setPage}
+        totalItems={filtered.length}
+        itemsPerPage={ITEMS_PER_PAGE}
+      />
 
       {/* Create/Edit Modal */}
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editing ? 'Edit FIR' : 'File New FIR'}>

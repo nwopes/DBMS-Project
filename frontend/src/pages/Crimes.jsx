@@ -6,9 +6,11 @@ import { AlertTriangle, Plus, Search, Eye, Pencil, Trash2 } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import StatusBadge from '../components/StatusBadge'
 import Modal from '../components/Modal'
+import Pagination from '../components/Pagination'
 
 const CRIME_TYPES = ['Theft','Robbery','Assault','Murder','Fraud','Burglary','Kidnapping','Cybercrime','Drug Trafficking','Arson','Vandalism','Extortion','Hit and Run','Forgery','Smuggling','Harassment','Rape','Domestic Violence']
 const STATUSES = ['Open','Closed','Under Investigation']
+const ITEMS_PER_PAGE = 10
 
 const emptyForm = { crime_type: '', date: '', time: '', location_id: '', description: '', status: 'Open' }
 
@@ -21,6 +23,7 @@ export default function Crimes() {
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState(emptyForm)
   const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(1)
   const navigate = useNavigate()
 
   const load = async () => {
@@ -37,6 +40,11 @@ export default function Crimes() {
      c.city?.toLowerCase().includes(search.toLowerCase())) &&
     (!filterStatus || c.status === filterStatus)
   )
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE)
+  const paginated  = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
+
+  const handleSearch = (v) => { setSearch(v); setPage(1) }
+  const handleFilter = (v) => { setFilterStatus(v); setPage(1) }
 
   const openCreate = () => { setEditing(null); setForm(emptyForm); setShowModal(true) }
   const openEdit = (c) => {
@@ -90,9 +98,9 @@ export default function Crimes() {
       <div className="flex gap-3 mb-5">
         <div className="flex-1 relative">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-          <input className="form-input pl-9" placeholder="Search by type or city..." value={search} onChange={e => setSearch(e.target.value)} />
+          <input className="form-input pl-9" placeholder="Search by type or city..." value={search} onChange={e => handleSearch(e.target.value)} />
         </div>
-        <select className="form-input" style={{ width: 180 }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+        <select className="form-input" style={{ width: 180 }} value={filterStatus} onChange={e => handleFilter(e.target.value)}>
           <option value="">All Statuses</option>
           {STATUSES.map(s => <option key={s}>{s}</option>)}
         </select>
@@ -111,9 +119,9 @@ export default function Crimes() {
           <tbody>
             {loading ? (
               <tr><td colSpan={7} className="text-center py-12 text-slate-500">Loading...</td></tr>
-            ) : filtered.length === 0 ? (
+            ) : paginated.length === 0 ? (
               <tr><td colSpan={7} className="text-center py-12 text-slate-500">No crimes found</td></tr>
-            ) : filtered.map(c => (
+            ) : paginated.map(c => (
               <tr key={c.crime_id} className="table-row">
                 <td className="px-4 py-3 text-xs text-slate-500 font-mono">#{c.crime_id}</td>
                 <td className="px-4 py-3 font-medium text-slate-200 text-sm">{c.crime_type}</td>
@@ -133,6 +141,14 @@ export default function Crimes() {
           </tbody>
         </table>
       </div>
+
+      <Pagination
+        currentPage={page}
+        totalPages={totalPages}
+        onPageChange={setPage}
+        totalItems={filtered.length}
+        itemsPerPage={ITEMS_PER_PAGE}
+      />
 
       {/* Modal */}
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editing ? 'Edit Crime Record' : 'Log New Crime'}>

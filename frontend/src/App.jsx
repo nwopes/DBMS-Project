@@ -13,6 +13,8 @@ import Stations from './pages/Stations'
 import Persons from './pages/Persons'
 import CourtCases from './pages/CourtCases'
 import Locations from './pages/Locations'
+import AuditLog from './pages/AuditLog'
+import CrimeMap from './pages/CrimeMap'
 
 export default function App() {
   return (
@@ -32,18 +34,20 @@ export default function App() {
         <Sidebar />
         <main className="flex-1 ml-64 p-6 overflow-auto">
           <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/crimes" element={<Crimes />} />
-            <Route path="/crimes/:id" element={<CrimeDetail />} />
-            <Route path="/cases" element={<Cases />} />
-            <Route path="/cases/:id" element={<CaseDetail />} />
-            <Route path="/firs" element={<FIRs />} />
-            <Route path="/evidence" element={<Evidence />} />
-            <Route path="/officers" element={<Officers />} />
-            <Route path="/stations" element={<Stations />} />
-            <Route path="/persons" element={<Persons />} />
-            <Route path="/court-cases" element={<CourtCases />} />
-            <Route path="/locations" element={<Locations />} />
+            <Route path="/"             element={<Dashboard />} />
+            <Route path="/crimes"       element={<Crimes />} />
+            <Route path="/crimes/:id"   element={<CrimeDetail />} />
+            <Route path="/cases"        element={<Cases />} />
+            <Route path="/cases/:id"    element={<CaseDetail />} />
+            <Route path="/firs"         element={<FIRs />} />
+            <Route path="/evidence"     element={<Evidence />} />
+            <Route path="/officers"     element={<Officers />} />
+            <Route path="/stations"     element={<Stations />} />
+            <Route path="/persons"      element={<Persons />} />
+            <Route path="/court-cases"  element={<CourtCases />} />
+            <Route path="/locations"    element={<Locations />} />
+            <Route path="/audit-log"    element={<AuditLog />} />
+            <Route path="/crime-map"    element={<CrimeMap />} />
           </Routes>
         </main>
       </div>

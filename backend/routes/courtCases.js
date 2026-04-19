@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
+const { logAudit } = require('../utils/audit');
 
 router.get('/', async (req, res) => {
   try {
@@ -24,7 +25,8 @@ router.get('/:id', async (req, res) => {
        FROM Court_Case cc
        JOIN Case_File cf ON cc.case_id = cf.case_id
        JOIN Crime c ON cf.crime_id = c.crime_id
-       WHERE cc.court_case_id=?`, [req.params.id]
+       WHERE cc.court_case_id=?`,
+      [req.params.id]
     );
     if (!row) return res.status(404).json({ error: 'Court case not found' });
     res.json(row);
@@ -40,6 +42,7 @@ router.post('/', async (req, res) => {
       'INSERT INTO Court_Case (case_id, court_name, verdict, hearing_date) VALUES (?,?,?,?)',
       [case_id, court_name || null, verdict || null, hearing_date || null]
     );
+    await logAudit('Court_Case', result.insertId, 'INSERT', null, req.body);
     res.status(201).json({ court_case_id: result.insertId, message: 'Court case created' });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -48,11 +51,13 @@ router.post('/', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
   try {
+    const [[old]] = await pool.query('SELECT * FROM Court_Case WHERE court_case_id=?', [req.params.id]);
     const { case_id, court_name, verdict, hearing_date } = req.body;
     await pool.query(
       'UPDATE Court_Case SET case_id=?, court_name=?, verdict=?, hearing_date=? WHERE court_case_id=?',
       [case_id, court_name || null, verdict || null, hearing_date || null, req.params.id]
     );
+    await logAudit('Court_Case', parseInt(req.params.id), 'UPDATE', old, req.body);
     res.json({ message: 'Court case updated' });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -61,7 +66,9 @@ router.put('/:id', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
   try {
+    const [[old]] = await pool.query('SELECT * FROM Court_Case WHERE court_case_id=?', [req.params.id]);
     await pool.query('DELETE FROM Court_Case WHERE court_case_id=?', [req.params.id]);
+    await logAudit('Court_Case', parseInt(req.params.id), 'DELETE', old, null);
     res.json({ message: 'Court case deleted' });
   } catch (err) {
     res.status(500).json({ error: err.message });

@@ -23,10 +23,11 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { address, city, state, pincode } = req.body;
+    const { address, city, state, pincode, latitude, longitude } = req.body;
     const [result] = await pool.query(
-      'INSERT INTO Location (address, city, state, pincode) VALUES (?,?,?,?)',
-      [address || null, city || null, state || null, pincode || null]
+      'INSERT INTO Location (address, city, state, pincode, latitude, longitude) VALUES (?,?,?,?,?,?)',
+      [address || null, city || null, state || null, pincode || null,
+       latitude ? parseFloat(latitude) : null, longitude ? parseFloat(longitude) : null]
     );
     res.status(201).json({ location_id: result.insertId, message: 'Location created' });
   } catch (err) {
@@ -36,10 +37,12 @@ router.post('/', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
   try {
-    const { address, city, state, pincode } = req.body;
+    const { address, city, state, pincode, latitude, longitude } = req.body;
     await pool.query(
-      'UPDATE Location SET address=?, city=?, state=?, pincode=? WHERE location_id=?',
-      [address || null, city || null, state || null, pincode || null, req.params.id]
+      'UPDATE Location SET address=?, city=?, state=?, pincode=?, latitude=?, longitude=? WHERE location_id=?',
+      [address || null, city || null, state || null, pincode || null,
+       latitude ? parseFloat(latitude) : null, longitude ? parseFloat(longitude) : null,
+       req.params.id]
     );
     res.json({ message: 'Location updated' });
   } catch (err) {

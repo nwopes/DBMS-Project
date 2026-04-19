@@ -5,7 +5,7 @@ import { MapPin, Plus, Search, Pencil, Trash2 } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import Modal from '../components/Modal'
 
-const emptyForm = { address: '', city: '', state: '', pincode: '' }
+const emptyForm = { address: '', city: '', state: '', pincode: '', latitude: '', longitude: '' }
 
 const INDIAN_STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal','Delhi','Jammu and Kashmir','Ladakh','Puducherry']
 
@@ -28,7 +28,10 @@ export default function Locations() {
   const openCreate = () => { setEditing(null); setForm(emptyForm); setShowModal(true) }
   const openEdit = (l) => {
     setEditing(l.location_id)
-    setForm({ address: l.address || '', city: l.city || '', state: l.state || '', pincode: l.pincode || '' })
+    setForm({
+      address: l.address || '', city: l.city || '', state: l.state || '', pincode: l.pincode || '',
+      latitude: l.latitude ?? '', longitude: l.longitude ?? '',
+    })
     setShowModal(true)
   }
 
@@ -84,7 +87,12 @@ export default function Locations() {
               </div>
               <span className="text-xs text-slate-500 font-mono">#{l.location_id}</span>
             </div>
-            <p className="text-xs text-slate-400 mb-3 truncate">{l.address || '—'}</p>
+            <p className="text-xs text-slate-400 mb-2 truncate">{l.address || '—'}</p>
+            {(l.latitude && l.longitude) && (
+              <p className="text-xs text-slate-500 mb-2 font-mono">
+                {parseFloat(l.latitude).toFixed(4)}, {parseFloat(l.longitude).toFixed(4)}
+              </p>
+            )}
             <div className="flex items-center justify-between">
               <span className="text-xs font-mono px-2 py-1 rounded" style={{ background: 'rgba(59,130,246,0.1)', color: '#60a5fa' }}>
                 {l.pincode || 'No PIN'}
@@ -120,6 +128,14 @@ export default function Locations() {
                 <option value="">Select state</option>
                 {INDIAN_STATES.map(s => <option key={s}>{s}</option>)}
               </select>
+            </div>
+            <div>
+              <label className="block text-xs text-slate-400 mb-1.5">Latitude (for map)</label>
+              <input type="number" step="any" className="form-input" value={form.latitude} onChange={e => setForm({...form, latitude: e.target.value})} placeholder="e.g. 28.6139" />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-400 mb-1.5">Longitude (for map)</label>
+              <input type="number" step="any" className="form-input" value={form.longitude} onChange={e => setForm({...form, longitude: e.target.value})} placeholder="e.g. 77.2090" />
             </div>
           </div>
           <div className="flex gap-3 pt-2">

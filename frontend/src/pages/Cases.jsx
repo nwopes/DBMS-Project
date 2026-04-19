@@ -6,8 +6,10 @@ import { FolderOpen, Plus, Search, Eye, Pencil, Trash2 } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import StatusBadge from '../components/StatusBadge'
 import Modal from '../components/Modal'
+import Pagination from '../components/Pagination'
 
 const STATUSES = ['Open','Closed','Under Investigation']
+const ITEMS_PER_PAGE = 10
 const emptyForm = { crime_id: '', lead_officer_id: '', case_status: 'Open', start_date: '', end_date: '' }
 
 export default function Cases() {
@@ -19,6 +21,7 @@ export default function Cases() {
   const [showModal, setShowModal] = useState(false)
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState(emptyForm)
+  const [page, setPage] = useState(1)
   const navigate = useNavigate()
 
   const load = async () => {
@@ -34,6 +37,8 @@ export default function Cases() {
      String(c.case_id).includes(search) || c.city?.toLowerCase().includes(search.toLowerCase())) &&
     (!filterStatus || c.case_status === filterStatus)
   )
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE)
+  const paginated  = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
 
   const openCreate = () => { setEditing(null); setForm(emptyForm); setShowModal(true) }
   const openEdit = (c) => {
@@ -89,7 +94,7 @@ export default function Cases() {
           <tbody>
             {filtered.length === 0 ? (
               <tr><td colSpan={7} className="text-center py-12 text-slate-500">No cases found</td></tr>
-            ) : filtered.map(c => (
+            ) : paginated.map(c => (
               <tr key={c.case_id} className="table-row">
                 <td className="px-4 py-3 text-xs text-slate-500 font-mono">#{c.case_id}</td>
                 <td className="px-4 py-3 font-medium text-slate-200 text-sm">{c.crime_type}</td>
@@ -109,6 +114,14 @@ export default function Cases() {
           </tbody>
         </table>
       </div>
+
+      <Pagination
+        currentPage={page}
+        totalPages={totalPages}
+        onPageChange={setPage}
+        totalItems={filtered.length}
+        itemsPerPage={ITEMS_PER_PAGE}
+      />
 
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editing ? 'Edit Case' : 'New Case File'}>
         <form onSubmit={handleSubmit} className="space-y-4">
