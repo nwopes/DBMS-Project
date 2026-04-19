@@ -34,24 +34,32 @@ export default function Dashboard() {
   const [byMonth, setByMonth] = useState([])
   const [recentCrimes, setRecentCrimes] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [s, t, c, m, r] = await Promise.all([
+        setError('')
+        const requests = await Promise.allSettled([
           axios.get('/api/dashboard/stats'),
           axios.get('/api/dashboard/crimes-by-type'),
           axios.get('/api/dashboard/crimes-by-city'),
           axios.get('/api/dashboard/crimes-by-month'),
           axios.get('/api/dashboard/recent-crimes'),
         ])
-        setStats(s.data)
-        setByType(t.data)
-        setByCity(c.data)
-        setByMonth(m.data)
-        setRecentCrimes(r.data)
+        const [s, t, c, m, r] = requests
+        if (s.status === 'fulfilled') setStats(s.value.data)
+        if (t.status === 'fulfilled') setByType(t.value.data)
+        if (c.status === 'fulfilled') setByCity(c.value.data)
+        if (m.status === 'fulfilled') setByMonth(m.value.data)
+        if (r.status === 'fulfilled') setRecentCrimes(r.value.data)
+
+        const failed = requests.find(req => req.status === 'rejected')
+        if (failed) {
+          setError(failed.reason?.response?.data?.error || failed.reason?.message || 'Failed to load dashboard data')
+        }
       } catch (e) {
-        console.error(e)
+        setError(e.response?.data?.error || e.message || 'Failed to load dashboard data')
       } finally {
         setLoading(false)
       }
@@ -78,6 +86,13 @@ export default function Dashboard() {
         </div>
         <p className="text-slate-400 text-sm ml-5">Real-time overview of the Crime Management System</p>
       </div>
+
+      {error && (
+        <div className="mb-5 rounded-lg border px-4 py-3 text-sm"
+          style={{ background: 'rgba(239,68,68,0.08)', borderColor: 'rgba(239,68,68,0.25)', color: '#fca5a5' }}>
+          Dashboard data could not be loaded: {error}. Check that the backend is running and MySQL credentials in backend/.env are correct.
+        </div>
+      )}
 
       {/* Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -164,7 +179,9 @@ export default function Dashboard() {
             Recent Incidents
           </h3>
           <div className="space-y-2 overflow-y-auto" style={{ maxHeight: 200 }}>
-            {recentCrimes.map((c) => (
+            {recentCrimes.length === 0 ? (
+              <p className="text-sm text-slate-500 py-8 text-center">No recent incidents available</p>
+            ) : recentCrimes.map((c) => (
               <div key={c.crime_id} className="flex items-center justify-between py-2 table-row">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-slate-200 truncate">{c.crime_type}</p>

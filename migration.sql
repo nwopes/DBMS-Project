@@ -5,10 +5,35 @@
 
 USE crime_db;
 
--- 1. Add latitude/longitude to Location table
-ALTER TABLE Location
-  ADD COLUMN IF NOT EXISTS latitude  DECIMAL(10,6) NULL,
-  ADD COLUMN IF NOT EXISTS longitude DECIMAL(11,6) NULL;
+-- 1. Add latitude/longitude to Location table.
+-- MySQL versions differ on ALTER TABLE ... ADD COLUMN IF NOT EXISTS, so use
+-- information_schema to keep this migration repeatable.
+DELIMITER //
+DROP PROCEDURE IF EXISTS add_location_gps_columns //
+CREATE PROCEDURE add_location_gps_columns()
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'Location'
+      AND COLUMN_NAME = 'latitude'
+  ) THEN
+    ALTER TABLE Location ADD COLUMN latitude DECIMAL(10,6) NULL;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'Location'
+      AND COLUMN_NAME = 'longitude'
+  ) THEN
+    ALTER TABLE Location ADD COLUMN longitude DECIMAL(11,6) NULL;
+  END IF;
+END //
+DELIMITER ;
+
+CALL add_location_gps_columns();
+DROP PROCEDURE add_location_gps_columns;
 
 -- Populate approximate city-level coordinates for existing locations
 UPDATE Location SET latitude = 28.6139, longitude = 77.2090 WHERE location_id = 1;  -- Delhi MG Road

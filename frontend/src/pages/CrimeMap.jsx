@@ -52,16 +52,22 @@ export default function CrimeMap() {
   const [crimes, setCrimes]     = useState([])
   const [stats, setStats]       = useState([])
   const [loading, setLoading]   = useState(true)
+  const [error, setError]       = useState('')
   const [showHeat, setShowHeat] = useState(true)
   const [filterType, setFilterType] = useState('')
 
   useEffect(() => {
+    setError('')
     Promise.all([
       axios.get('/api/map/crimes'),
       axios.get('/api/map/stats'),
     ]).then(([cr, st]) => {
       setCrimes(cr.data)
       setStats(st.data)
+    }).catch((err) => {
+      setError(err.response?.data?.error || err.message || 'Failed to load map data')
+      setCrimes([])
+      setStats([])
     }).finally(() => setLoading(false))
   }, [])
 
@@ -85,9 +91,11 @@ export default function CrimeMap() {
       <PageHeader title="Crime Heatmap" subtitle="Geographic crime distribution" icon={MapPin} />
       <div className="glass-card p-12 text-center">
         <MapPin size={40} className="mx-auto mb-3" style={{ color: '#3b82f6' }} />
-        <p className="text-slate-400 mb-2">No location data available</p>
+        <p className="text-slate-400 mb-2">{error ? 'Map data could not be loaded' : 'No location data available'}</p>
         <p className="text-sm text-slate-500">
-          Add latitude/longitude coordinates to Locations, then run <code className="text-blue-400">migration.sql</code> to populate them.
+          {error
+            ? `${error}. Check that the backend is running and MySQL credentials in backend/.env are correct.`
+            : <>Add latitude/longitude coordinates to Locations, then run <code className="text-blue-400">migration.sql</code> to populate them.</>}
         </p>
       </div>
     </div>

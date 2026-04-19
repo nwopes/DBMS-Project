@@ -4,12 +4,26 @@ const path = require('path');
 require('dotenv').config();
 
 const app = express();
+const pool = require('./db');
 
 app.use(cors());
 app.use(express.json());
 
 // Serve uploaded evidence files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+app.get('/api/health/db', async (_req, res) => {
+  try {
+    await pool.query('SELECT 1');
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({
+      ok: false,
+      code: err.code || 'DB_ERROR',
+      error: err.message,
+    });
+  }
+});
 
 // Existing routes
 app.use('/api/dashboard',    require('./routes/dashboard'));
@@ -33,4 +47,10 @@ app.use('/api/map',          require('./routes/map'));
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Crime Management Server running on port ${PORT}`);
+  pool.query('SELECT 1')
+    .then(() => console.log('MySQL connection OK'))
+    .catch((err) => {
+      console.error('MySQL connection failed:', err.code || err.message);
+      console.error('Check backend/.env DB_HOST, DB_USER, DB_PASSWORD, and DB_NAME.');
+    });
 });

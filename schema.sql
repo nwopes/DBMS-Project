@@ -5,6 +5,10 @@
 CREATE DATABASE IF NOT EXISTS crime_db;
 USE crime_db;
 
+DROP PROCEDURE IF EXISTS GetCaseDetails;
+DROP PROCEDURE IF EXISTS ListOpenCases;
+DROP FUNCTION IF EXISTS GetCrimeCount;
+
 SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS Case_Officer;
 DROP TABLE IF EXISTS Crime_Person;
@@ -28,7 +32,9 @@ CREATE TABLE Location (
     address VARCHAR(255),
     city VARCHAR(100),
     state VARCHAR(100),
-    pincode VARCHAR(10)
+    pincode VARCHAR(10),
+    latitude DECIMAL(10,6) NULL,
+    longitude DECIMAL(11,6) NULL
 );
 
 CREATE TABLE Person (
@@ -166,21 +172,7 @@ END //
 DELIMITER ;
 
 -- ============================================================
--- SECTION D: TRIGGER
--- ============================================================
-
-DELIMITER //
-CREATE TRIGGER after_crime_insert
-    AFTER INSERT ON Crime
-    FOR EACH ROW
-    BEGIN
-        INSERT INTO Case_File (crime_id, lead_officer_id, case_status, start_date)
-        VALUES (NEW.crime_id, 1, 'Open', CURDATE());
-    END //
-DELIMITER ;
-
--- ============================================================
--- SECTION E: CURSOR PROCEDURE
+-- SECTION D: CURSOR PROCEDURE
 -- ============================================================
 
 DELIMITER //
@@ -214,7 +206,7 @@ DELIMITER ;
 -- SECTION F: SAMPLE DATA (DML)
 -- ============================================================
 
-INSERT INTO Location VALUES
+INSERT INTO Location (location_id, address, city, state, pincode) VALUES
 (1,'123 MG Road','Delhi','Delhi','110001'),
 (2,'45 Park Street','Mumbai','Maharashtra','400001'),
 (3,'7 Lake View','Bangalore','Karnataka','560001'),
@@ -362,3 +354,26 @@ INSERT INTO Case_Officer VALUES
 (1,1),(1,7),(2,2),(2,10),(3,4),(3,8),(4,5),(5,6),
 (6,3),(6,7),(7,8),(8,9),(9,10),(10,1),(11,2),(12,4),
 (13,6),(14,9),(15,10),(3,1);
+
+-- ============================================================
+-- SECTION G: TRIGGER
+-- ============================================================
+
+DELIMITER //
+CREATE TRIGGER after_crime_insert
+    AFTER INSERT ON Crime
+    FOR EACH ROW
+    BEGIN
+        DECLARE default_officer_id INT;
+
+        SET default_officer_id = (
+            SELECT officer_id
+            FROM Police_Officer
+            ORDER BY officer_id
+            LIMIT 1
+        );
+
+        INSERT INTO Case_File (crime_id, lead_officer_id, case_status, start_date)
+        VALUES (NEW.crime_id, default_officer_id, 'Open', CURDATE());
+    END //
+DELIMITER ;

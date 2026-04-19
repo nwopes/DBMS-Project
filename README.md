@@ -295,11 +295,11 @@ SELECT GetCrimeCount('Delhi');  -- Returns: 2
 ```
 
 #### Trigger: `after_crime_insert`
-Fires after every new crime insertion. Automatically creates a corresponding `Case_File` record with status `Open` and the current date as `start_date`, assigned to officer ID 1 by default.
+Fires after every new crime insertion. Automatically creates a corresponding `Case_File` record with status `Open` and the current date as `start_date`, assigned to the first available officer.
 
 ```sql
 -- Inserting a crime automatically creates a case file:
-INSERT INTO Crime VALUES (16, 'Robbery', '2024-09-01', '20:00:00', 1, 'Shop robbery', 'Open');
+INSERT INTO Crime VALUES (121, 'Robbery', '2025-06-01', '20:00:00', 1, 'Shop robbery', 'Open');
 -- → Case_File row automatically inserted
 ```
 
@@ -390,6 +390,7 @@ DBMS-Project/
 │
 ├── schema.sql                  # Complete SQL: DDL, DML, procedures, trigger, cursor
 ├── migration.sql               # v2 migration: adds lat/lng, Evidence_File, Audit_Log
+├── data_expanded.sql           # Full dummy dataset loaded by setup-db.js
 ├── setup-db.js                 # Interactive DB setup script (Node.js)
 ├── SETUP.bat                   # Run this first — creates the DB
 ├── START.bat                   # Starts both servers
@@ -474,14 +475,17 @@ DBMS-Project/
 
 Double-click `SETUP.bat`. It will prompt for your MySQL root password, then:
 - Create the `crime_db` database
-- Run all DDL (11 core tables)
-- Load all sample data (15 crimes, 12 persons, 10 officers, 8 stations, 15 cases, 10 FIRs, 15 evidence items, stored procedures, trigger, cursor)
+- Run all DDL for the core schema, routines, and trigger
+- Apply the v2 migration (`Evidence_File`, `Audit_Log`, and GPS columns)
+- Load the expanded dummy dataset from `data_expanded.sql` (50 locations, 80 persons, 25 stations, 50 officers, 120 crimes, 120 cases, 120 FIRs, 150 evidence records, 80 court cases, and sample audit logs)
 - Automatically update `backend/.env` with your password
 
 **Option B — Manual**
 
 ```bash
 mysql -u root -p < schema.sql
+mysql -u root -p crime_db < migration.sql
+mysql -u root -p crime_db < data_expanded.sql
 ```
 
 Then update `backend/.env`:
@@ -496,13 +500,7 @@ PORT=5000
 OPENAI_API_KEY=sk-your-key-here
 ```
 
-**Step 2 — Run the v2 migration** (adds `Evidence_File`, `Audit_Log`, and GPS columns to `Location`)
-
-```bash
-mysql -u root -p crime_db < migration.sql
-```
-
-This is safe to run on an existing database — it uses `ADD COLUMN IF NOT EXISTS` and `CREATE TABLE IF NOT EXISTS`.
+The manual commands above create the base schema, apply the v2 migration, then replace the small starter dataset with the expanded dummy dataset used by the dashboard, tables, and heatmap.
 
 ### Running the App
 
